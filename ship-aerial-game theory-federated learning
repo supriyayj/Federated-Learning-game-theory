@@ -1,0 +1,374 @@
+import os
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+import tensorflow as tf
+from sklearn.preprocessing import OneHotEncoder
+from tensorflow.keras.datasets import cifar10
+from tensorflow.keras.datasets import mnist
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.backend import image_data_format
+from keras.models import Sequential
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from keras.models import Sequential
+from mlxtend.plotting import plot_confusion_matrix
+from sklearn.metrics import confusion_matrix
+from keras.layers import Dense
+from keras.layers import Conv2D, DepthwiseConv2D, SeparableConv2D 
+from keras.layers import AvgPool2D, MaxPooling2D, Dropout, Flatten, BatchNormalization
+from keras.constraints import maxnorm
+import matplotlib.pyplot as plt
+import numpy as np
+import copy
+import random
+import sys
+import glob
+import keras
+import cv2
+import csv
+import time
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from keras.callbacks import ModelCheckpoint
+
+import os
+import numpy as np # linear algebra
+import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+
+import torch
+import torchvision
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from PIL import Image, ImageDraw
+import xml.etree.ElementTree as ET
+from google.colab import drive
+drive.mount('/content/drive')
+images_dir = '/content/ships-dataset/images/'
+#images_dir = '/kaggle/input/ship-detection/images/'
+#annotations_dir = '/content/ship-detection/annotations/'
+
+# for dirname, _, filenames in os.walk('/kaggle/input'):
+#     for filename in filenames:
+#         print(os.path.join(dirname, filename))
+
+from keras.preprocessing.image import ImageDataGenerator
+import cv2
+import glob
+import numpy as np
+from sklearn.model_selection import train_test_split
+import os
+from tensorflow.keras.utils import to_categorical
+
+fire = glob.glob('/content/ships-dataset/images/*.png')
+datagen = ImageDataGenerator(
+        rotation_range=30,  # randomly rotate images by up to 30 degrees
+        zoom_range=0.2,  # randomly zoom images by up to 20%
+        horizontal_flip=True,  # randomly flip images horizontally
+        vertical_flip=True,  # randomly flip images vertically
+        validation_split=0.2)  # split 20% of the data for validation
+
+x_train, y_train = [], []
+no_ship_dir = '/content/no_ship_images/'
+
+# Create the "no ship" directory if it doesn't exist
+os.makedirs(no_ship_dir, exist_ok=True)
+
+for i, image_path in enumerate(fire):
+    img = cv2.imread(image_path)  # Reading the image
+    img = cv2.resize(img, (150, 150))
+
+    # Perform ship detection on the image (code for ship detection is not included here)
+    # has_ship = perform_ship_detection(img)  # Implement your ship detection logic
+    
+    if i % 100 == 0:
+        # Crop the image with a different size
+        crop_coords = (50, 50, 100, 100)  # Define the desired crop coordinates
+    else:
+        crop_coords = (70, 50, 80, 90)  # Define the desired crop coordinates
+    
+    # Crop the image
+    cropped_img = img[crop_coords[1]:crop_coords[3], crop_coords[0]:crop_coords[2], :]
+
+    # Pre-process the cropped image
+    cropped_img = np.float32(cropped_img) / 255.0
+    # Perform additional pre-processing steps if needed, such as adding noise, blurring, etc.
+
+    # Save the cropped image in the "no ship" folder
+    filename = os.path.basename(image_path)
+    save_path = os.path.join(no_ship_dir, filename)
+    cv2.imwrite(save_path, cropped_img)
+    
+    x_train.append(cropped_img)
+    y_train.append(0)
+
+nfire = glob.glob('/content/no_ship_images/*.png')
+for j in nfire:
+    img = cv2.imread(j)  # Reading the image
+    img = cv2.resize(img, (150, 150))
+    
+    x_train.append(img)
+    y_train.append(1)  # Assign a label of 1 for "no ship"
+
+# Convert the lists to arrays
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+
+# Convert labels to categorical format
+y_train = to_categorical(y_train)
+
+# Split the data into training and validation sets
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+
+print("x_train shape:", x_train.shape)
+print("y_train shape:", y_train.shape)
+print("x_val shape:", x_val.shape)
+print("y_val shape:", y_val.shape)
+
+
+from keras.preprocessing.image import ImageDataGenerator
+from skimage.util import random_noise
+from skimage.filters import median
+import cv2
+import glob
+import numpy as np
+from sklearn.model_selection import train_test_split
+import os
+
+fire = glob.glob('/content/ships-dataset/images/*.png')
+datagen = ImageDataGenerator(
+        rotation_range=30,  # randomly rotate images by up to 30 degrees
+        zoom_range=0.2,  # randomly zoom images by up to 20%
+        horizontal_flip=True,  # randomly flip images horizontally
+        vertical_flip=True,  # randomly flip images vertically
+        validation_split=0.2)  # split 20% of the data for validation
+
+x_train, x_test, y_train, y_test = [], [], [], []
+no_ship_dir = '/content/no_ship_images/'
+
+# Create the "no ship" directory if it doesn't exist
+os.makedirs(no_ship_dir, exist_ok=True)
+
+for i in fire:
+    img = cv2.imread(str(i))  # Reading the image
+    img = cv2.resize(img, (150, 150))
+
+    # Perform ship detection on the image (code for ship detection is not included here)
+    #has_ship = perform_ship_detection(img)  # Implement your ship detection logic
+
+    
+        # Crop the image
+    crop_coords = (70, 50, 80, 90)  # Define the desired crop coordinates
+    cropped_img = img[crop_coords[1]:crop_coords[3], crop_coords[0]:crop_coords[2], :]
+
+        # Pre-process the cropped image
+    cropped_img = np.float32(cropped_img) / 255.0
+        # Perform additional pre-processing steps if needed, such as adding noise, blurring, etc.
+
+        # Save the cropped image in the "no ship" folder
+    filename = os.path.basename(i)
+    save_path = os.path.join(no_ship_dir, filename)
+    cv2.imwrite(save_path, cropped_img)
+    x_train.append(img)
+    y_train.append(0)
+
+print(str(len(x_train)))
+nfire = glob.glob('/content/no_ship_images/*.png')
+for j in nfire:
+    img = cv2.imread(str(j))  # Reading the image
+    img = cv2.resize(img, (150, 150))
+    #else:
+    x_train.append(img)
+
+    y_train.append(1)  # Assign a label of 0 for "no ship"
+print(str(len(x_train)))
+print(y_train)
+y_train=to_categorical(y_train)
+# Convert the lists to arrays
+x_train = np.array(x_train)
+y_train = np.array(y_train)
+
+# Split the data into training and validation sets
+x_train, x_test, y_train, y_test = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+
+print("x_train shape:", x_train.shape)
+print("y_train shape:", y_train.shape)
+print("x_val shape:", x_test.shape)
+print("y_val shape:", y_test.shape)
+
+
+from keras.preprocessing.image import ImageDataGenerator
+from skimage.util import random_noise
+from skimage.filters import median
+fire = glob.glob('/content/ships-dataset/images/*.png')
+datagen = ImageDataGenerator(
+        rotation_range=30,  # randomly rotate images by up to 30 degrees
+        zoom_range=0.2,  # randomly zoom images by up to 20%
+        horizontal_flip=True,  # randomly flip images horizontally
+        vertical_flip=True,  # randomly flip images vertically
+        validation_split=0.2)  # split 20% of the data for validation
+
+x_train, x_test, y_train, y_test = [], [], [], []
+
+for i in fire:
+    img = cv2.imread(str(i)) # Reading the image
+    img = cv2.resize(img, (150, 150))
+    #blurred = cv2.medianBlur(img, 5)
+    #img = median(img, selem=None, out=None, mask=None, shift_x=False, shift_y=False)
+    #img = np.float32(img)
+    img = np.float32(img)/255.0 
+    
+    #img = random_noise(img, mode='gaussian', mean=0, var=0.01, clip=True) # add Gaussian noise to the image
+    x_train.append(img)
+    y_train.append(0)
+
+X_train = np.array(x_train)
+y_train = np.array(y_train)
+
+# Fit the image data generator on the training data
+#datagen.fit(X_train)
+
+# Generate augmented images and append to the training data
+#for X_batch, y_batch in datagen.flow(X_train, y_train, batch_size=len(X_train), shuffle=True):
+    #X_train = np.concatenate((X_train, X_batch))
+   # y_train = np.concatenate((y_train, y_batch))
+   # break
+
+# Split the data into training and validation sets
+x_train, x_test, y_train, y_test = train_test_split(X_train, y_train, test_size=0.2, random_state=42)
+
+print("X_train shape:", x_train.shape)
+print("y_train shape:", y_train.shape)
+print("X_val shape:", x_test.shape)
+print("y_val shape:", y_test.shape)
+
+
+serverhist1={
+    "loss": list(),
+    "accuracy": list(),
+    "payoff": list(),
+    "precision": list(),
+    "recall": list(),
+    "f1": list()
+    }
+client_payoff = []
+client_cost = []
+client_number = []
+#from sklearn.ensemble import RandomForestClassifier
+def game_theory_federated_learning(x_train, y_train, x_test, y_test, num_clients, num_epochs, batch_size, lr):
+    print("X_train len",len(x_train))
+    print("y_train len",len(y_train))
+    print("X_train len",len(x_test))
+    print("y_train len",len(y_test))
+    #num_classes = y_train.shape[0]
+    #input_shape = X_train.shape[1:]
+    model_list = []
+    #model = Sequential()
+
+
+# compile the model
+
+    for i in range(num_clients):
+     
+        #x_train = np.array([np.array(val) for val in x_train]) 
+        model=tf.keras.Sequential([
+            #tf.keras.layers.Dense(64,  activation='relu'),
+            #tf.keras.layers.Dense(2, activation='softmax'),
+            tf.keras.layers.Conv2D(32,(3,3),activation='relu',input_shape=(150,150,3)),
+            tf.keras.layers.MaxPool2D(2,2),
+            tf.keras.layers.Conv2D(64,(3,3),activation='relu'),
+            tf.keras.layers.MaxPool2D(2,2),
+            tf.keras.layers.Conv2D(128,(3,3),activation='relu'),
+            tf.keras.layers.MaxPool2D(2,2),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512,activation='relu'),
+            tf.keras.layers.Dense(2,activation='sigmoid'),
+            
+        ])
+ 
+        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model_list.append(model)
+    comm_cost = 0
+    time_complexity = 0
+    # Train each client model for a fixed number of epochs
+    for i in range(num_clients):
+        start_time = time.time()
+        
+        print("----------------CLIENT " + str(i) +"-------------------------")
+        model_list[i].fit(x_train[i*(len(x_train)//num_clients):(i+1)*(len(x_train)//num_clients)],
+                          y_train[i*(len(x_train)//num_clients):(i+1)*(len(x_train)//num_clients)],
+                          epochs=num_epochs, batch_size=batch_size,validation_data=(x_test, y_test))
+        end_time = time.time()
+        time_complexity += (end_time - start_time)
+        client_cost_i = 0
+        for layer in model.layers:
+            weights = layer.get_weights()
+            for w in weights:
+                client_cost_i += w.nbytes
+        client_cost.append(client_cost_i)
+        client_number.append(i)
+        comm_cost += client_cost_i
+        time_complexity += (end_time - start_time)
+        print("Time complexity",time_complexity)
+        print("Communication cost (in bits):", comm_cost)
+        client_cost.append(comm_cost)
+    # Calculate each client's accuracy on the test set
+
+    client_accuracies = []
+    for i in range(num_clients):
+        _, accuracy = model_list[i].evaluate(x_test, y_test, verbose=0)
+        client_accuracies.append(accuracy)
+
+    # Calculate each client's payoff
+    client_payoffs = []
+
+    for i in range(num_clients):
+        print("----------------CLIENT " + str(i) +"-------------------------")
+        payoff = client_accuracies[i] - np.mean(client_accuracies)
+        print("----------------PAYOFF " + str(i) +"-------------------------"+ str(payoff))
+        client_payoffs.append(payoff)
+        client_payoff.append(payoff)
+        client_number.append(i)
+        h=model_list[i].evaluate(x_test,y_test)
+        serverhist1['loss'].append(h[1])
+        serverhist1['accuracy'].append(h[0])
+        serverhist1['payoff'].append(client_payoffs[i])
+    model.summary()
+    # Update each client's model based on their payoff
+    for i in range(num_clients):
+        #print("-----Num of Clients"+num_clients)
+        for layer in model_list[i].layers:
+            layer.set_weights(layer.get_weights() + lr * client_payoffs[i])
+            print("weights of the layers"+str(layer.get_weights()))
+
+    # Aggregate the updated models to form the new global model
+    global_weights = np.array(model_list[0].get_weights())
+    for i in range(1, num_clients):
+        global_weights += np.array(model_list[i].get_weights())
+    new_global_weights = global_weights / num_clients
+    for i in range(num_clients):
+        model_list[i].set_weights(new_global_weights)
+    
+    # Evaluate the new global model
+    _, global_accuracy = model_list[0].evaluate(x_test, y_test, verbose=0)
+    return global_accuracy
+
+# Set the hyperparameters
+num_clients = 5
+num_epochs = 5
+batch_size = 32
+lr = 0.001
+
+# Run the game-theoretic federated learning algorithm
+global_accuracy = game_theory_federated_learning(x_train, y_train, x_test, y_test, num_clients, num_epochs, batch_size, lr)
+
+print("Global accuracy:", global_accuracy)
+#server_model = game_theory_federated_learning(X_train, y_train, X_test, y_test, num_clients, num_epochs, batch_size, lr)   
+print(" \t\t\tFL")
+print("Round\tAccuracy\t\tLoss\t\tPayoff\t\tCommunication Cost")
+for i in range(num_epochs):
+  print(str(serverhist1['loss'][i])+"\t"+str(serverhist1['accuracy'][i])+"\t"+str(client_payoff[i])+"\t"+str(client_cost[i]))
+     
